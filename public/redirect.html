@@ -195,15 +195,21 @@
       const AUTO_REDIRECT_DELAY = 10000;
       
       try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const dataParam = urlParams.get('d');
+        var urlParams = new URLSearchParams(window.location.search);
+        var dataParam = urlParams.get('d');
         
         if (!dataParam) {
           document.body.innerHTML = '<div class="no-book-container"><h1>Error</h1><p>Invalid link</p></div>';
           return;
         }
 
-        const data = JSON.parse(decodeURIComponent(dataParam));
+        var data;
+        try {
+          data = JSON.parse(decodeURIComponent(dataParam));
+        } catch (e) {
+          // If decodeURIComponent fails, try without it
+          data = JSON.parse(dataParam);
+        }
         const originalUrl = data.originalUrl;
         const book = data.book;
         
@@ -284,4 +290,4 @@
     })();
   </script>
 </body>
-        </html>
+</html>
