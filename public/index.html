@@ -27,6 +27,13 @@
           placeholder="Optional keywords (e.g., gaming, crypto, fitness)"
           autocomplete="off"
         >
+        <select id="expirySelect">
+          <option value="1day">Expires in 1 day</option>
+          <option value="3days">Expires in 3 days</option>
+          <option value="1week" selected>Expires in 1 week (default)</option>
+          <option value="1month">Expires in 1 month</option>
+          <option value="never">Never expires</option>
+        </select>
       </div>
 
       <button id="shortenBtn" class="btn btn-primary">
@@ -58,6 +65,7 @@
   <script>
     const urlInput = document.getElementById('urlInput');
     const keywordsInput = document.getElementById('keywordsInput');
+    const expirySelect = document.getElementById('expirySelect');
     const shortenBtn = document.getElementById('shortenBtn');
     const result = document.getElementById('result');
     const shortUrlInput = document.getElementById('shortUrl');
@@ -75,6 +83,7 @@
     async function shortenURL() {
       const url = urlInput.value.trim();
       const keywords = keywordsInput.value.trim();
+      const expiry = expirySelect.value;
 
       // Validate URL
       if (!url) {
@@ -97,7 +106,7 @@
         const response = await fetch('/api/shorten', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, keywords })
+          body: JSON.stringify({ url, keywords, expiry })
         });
 
         if (!response.ok) {
