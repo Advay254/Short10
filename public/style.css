@@ -54,18 +54,21 @@ header h1 {
 
 input[type="url"],
 input[type="text"],
-input[type="password"] {
+input[type="password"],
+select {
   width: 100%;
   padding: 1rem;
   border: 2px solid #e0e0e0;
   border-radius: 10px;
   font-size: 1rem;
   transition: all 0.2s;
+  background: white;
 }
 
 input[type="url"]:focus,
 input[type="text"]:focus,
-input[type="password"]:focus {
+input[type="password"]:focus,
+select:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -240,4 +243,4 @@ footer {
   .admin-container {
     padding: 1rem;
   }
-}
+  }
