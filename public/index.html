@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Free URL Shortener</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔗 Smart URL Shortener</h1>
+      <p class="subtitle">Shorten your links in seconds</p>
+    </header>
+
+    <main class="shortener-box">
+      <div class="input-group">
+        <input 
+          type="url" 
+          id="urlInput" 
+          placeholder="Paste your long URL here..."
+          autocomplete="off"
+        >
+        <input 
+          type="text" 
+          id="keywordsInput" 
+          placeholder="Optional keywords (e.g., gaming, crypto, fitness)"
+          autocomplete="off"
+        >
+      </div>
+
+      <button id="shortenBtn" class="btn btn-primary">
+        Shorten URL
+      </button>
+
+      <div id="result" class="result hidden">
+        <div class="result-label">Your short link:</div>
+        <div class="short-url-container">
+          <input type="text" id="shortUrl" readonly>
+          <button id="copyBtn" class="btn btn-copy">Copy</button>
+        </div>
+        <div id="copyFeedback" class="copy-feedback hidden">✓ Copied!</div>
+      </div>
+
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Creating your short link...</p>
+      </div>
+
+      <div id="error" class="error hidden"></div>
+    </main>
+
+    <footer>
+      <p>Free forever • No sign-up required • Instant results</p>
+    </footer>
+  </div>
+
+  <script>
+    const urlInput = document.getElementById('urlInput');
+    const keywordsInput = document.getElementById('keywordsInput');
+    const shortenBtn = document.getElementById('shortenBtn');
+    const result = document.getElementById('result');
+    const shortUrlInput = document.getElementById('shortUrl');
+    const copyBtn = document.getElementById('copyBtn');
+    const copyFeedback = document.getElementById('copyFeedback');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+
+    shortenBtn.addEventListener('click', shortenURL);
+    urlInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') shortenURL();
+    });
+    copyBtn.addEventListener('click', copyToClipboard);
+
+    async function shortenURL() {
+      const url = urlInput.value.trim();
+      const keywords = keywordsInput.value.trim();
+
+      // Validate URL
+      if (!url) {
+        showError('Please enter a URL');
+        return;
+      }
+
+      if (!url.match(/^https?:\/\/.+/)) {
+        showError('Please enter a valid URL (must start with http:// or https://)');
+        return;
+      }
+
+      // Show loading
+      loading.classList.remove('hidden');
+      result.classList.add('hidden');
+      error.classList.add('hidden');
+      shortenBtn.disabled = true;
+
+      try {
+        const response = await fetch('/api/shorten', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, keywords })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to shorten URL');
+        }
+
+        const data = await response.json();
+        
+        // Show result
+        shortUrlInput.value = data.shortUrl;
+        result.classList.remove('hidden');
+        loading.classList.add('hidden');
+
+        // Clear input
+        urlInput.value = '';
+        keywordsInput.value = '';
+        
+      } catch (err) {
+        showError('Something went wrong. Please try again.');
+        loading.classList.add('hidden');
+      } finally {
+        shortenBtn.disabled = false;
+      }
+    }
+
+    function copyToClipboard() {
+      shortUrlInput.select();
+      document.execCommand('copy');
+      
+      copyFeedback.classList.remove('hidden');
+      setTimeout(() => {
+        copyFeedback.classList.add('hidden');
+      }, 2000);
+    }
+
+    function showError(message) {
+      error.textContent = message;
+      error.classList.remove('hidden');
+      setTimeout(() => {
+        error.classList.add('hidden');
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
