@@ -1,0 +1,9 @@
+node_modules/
+.env
+data/links.json
+data/books.json
+*.log
+.DS_Store
+dist/
+.wrangler/
+backup/
