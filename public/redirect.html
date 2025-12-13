@@ -116,12 +116,36 @@
       font-size: 1.2rem;
       margin-bottom: 2rem;
       opacity: 0.9;
+      max-width: 500px;
     }
 
     .countdown-large {
       font-size: 3rem;
       font-weight: bold;
       margin: 1rem 0;
+    }
+
+    .error-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .error-container h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .error-container p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+      max-width: 500px;
     }
 
     @media (max-width: 768px) {
@@ -179,6 +203,11 @@
     <div class="countdown-large" id="noBookCountdown">3</div>
   </div>
 
+  <div id="errorContainer" class="error-container" style="display: none;">
+    <h1>⚠️ Link Expired</h1>
+    <p id="errorMessage">This link has expired or is no longer available.</p>
+  </div>
+
   <div class="overlay-buttons" id="overlayButtons" style="display: none;">
     <button class="action-btn btn-explore" id="exploreBtn">
       📚 <span>Explore</span>
@@ -192,7 +221,7 @@
   <script>
     (function() {
       const BUTTON_APPEAR_DELAY = 15000;
-      const AUTO_REDIRECT_DELAY = 10000;
+      const AUTO_REDIRECT_DELAY = 15000;
       
       try {
         var urlParams = new URLSearchParams(window.location.search);
@@ -290,4 +319,4 @@
     })();
   </script>
 </body>
-</html>
+    </html>
