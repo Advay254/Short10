@@ -1,0 +1,29 @@
+{
+  "name": "short10",
+  "version": "2.0.0",
+  "description": "URL shortener with product discovery page and Supabase support",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [
+    "url-shortener",
+    "affiliate-marketing",
+    "redirect"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0",
+    "nanoid": "^3.3.7",
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
