@@ -89,6 +89,7 @@ const storage = {
           url: link.url,
           keywords: link.keywords,
           book: link.book,
+          expiresAt: link.expires_at,
           created: link.created
         };
       });
@@ -111,6 +112,7 @@ const storage = {
         url: data.url,
         keywords: data.keywords,
         book: data.book,
+        expiresAt: data.expires_at,
         created: data.created
       };
     } else {
@@ -127,6 +129,7 @@ const storage = {
         url: linkData.url,
         keywords: linkData.keywords || '',
         book: linkData.book || null,
+        expires_at: linkData.expiresAt || null,
         created: linkData.created
       });
       if (error) throw error;
@@ -310,10 +313,38 @@ app.get('/admin', (req, res) => {
 // Shorten URL (Public API)
 app.post('/api/shorten', async (req, res) => {
   try {
-    const { url, keywords } = req.body;
+    const { url, keywords, expiry } = req.body;
     
     if (!url || !url.match(/^https?:\/\/.+/)) {
       return res.status(400).json({ error: 'Invalid URL' });
+    }
+
+    // Calculate expiry date
+    let expiresAt = null;
+    if (expiry) {
+      const now = new Date();
+      switch (expiry) {
+        case '1day':
+          expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          break;
+        case '3days':
+          expiresAt = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+          break;
+        case '1week':
+          expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '1month':
+          expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+          break;
+        case 'never':
+          expiresAt = null;
+          break;
+        default:
+          expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // default 1 week
+      }
+    } else {
+      // Default: 1 week
+      expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     }
     
     const shortCode = nanoid(7);
@@ -323,10 +354,15 @@ app.post('/api/shorten', async (req, res) => {
       url,
       keywords: keywords || '',
       book: null,
+      expiresAt: expiresAt ? expiresAt.toISOString() : null,
       created: new Date().toISOString()
     });
     
-    res.json({ shortUrl, shortCode });
+    res.json({ 
+      shortUrl, 
+      shortCode,
+      expiresAt: expiresAt ? expiresAt.toISOString() : null
+    });
     
     // Match book in background
     matchBook(url, keywords || '').then(async (book) => {
@@ -353,12 +389,49 @@ app.get('/:code', async (req, res) => {
     const link = await storage.getLink(code);
     
     if (!link) {
-      return res.status(404).send('Short link not found');
+      // Link not found - show random book then error
+      const books = await storage.getBooks();
+      const randomBook = books.length > 0 ? books[Math.floor(Math.random() * books.length)] : null;
+      
+      const data = encodeURIComponent(JSON.stringify({
+        originalUrl: null,
+        book: randomBook,
+        expired: true,
+        message: 'Link not found or already expired'
+      }));
+      
+      return res.redirect(`/redirect.html?d=${data}`);
+    }
+
+    // Check if expired
+    if (link.expiresAt && new Date(link.expiresAt) < new Date()) {
+      // Delete expired link
+      if (useSupabase) {
+        await supabase.from('links').delete().eq('code', code);
+      } else {
+        const links = await readJSON(LINKS_FILE);
+        delete links[code];
+        await writeJSON(LINKS_FILE, links);
+      }
+
+      // Show random book then error
+      const books = await storage.getBooks();
+      const randomBook = books.length > 0 ? books[Math.floor(Math.random() * books.length)] : null;
+      
+      const data = encodeURIComponent(JSON.stringify({
+        originalUrl: null,
+        book: randomBook,
+        expired: true,
+        message: 'This link has expired'
+      }));
+      
+      return res.redirect(`/redirect.html?d=${data}`);
     }
     
     const data = encodeURIComponent(JSON.stringify({
       originalUrl: link.url,
-      book: link.book
+      book: link.book,
+      expired: false
     }));
     
     res.redirect(`/redirect.html?d=${data}`);
@@ -414,6 +487,39 @@ app.delete('/api/admin/books/:id', auth, async (req, res) => {
   }
 });
 
+// Delete expired links (cleanup job)
+async function deleteExpiredLinks() {
+  try {
+    if (useSupabase) {
+      const { error } = await supabase
+        .from('links')
+        .delete()
+        .lt('expires_at', new Date().toISOString())
+        .not('expires_at', 'is', null);
+      if (error) console.error('Cleanup error:', error);
+    } else {
+      const links = await readJSON(LINKS_FILE);
+      const now = new Date();
+      let deleted = 0;
+      Object.keys(links).forEach(code => {
+        if (links[code].expiresAt && new Date(links[code].expiresAt) < now) {
+          delete links[code];
+          deleted++;
+        }
+      });
+      if (deleted > 0) {
+        await writeJSON(LINKS_FILE, links);
+        console.log(`🗑️  Deleted ${deleted} expired links`);
+      }
+    }
+  } catch (err) {
+    console.error('Cleanup error:', err);
+  }
+}
+
+// Run cleanup every hour
+setInterval(deleteExpiredLinks, 60 * 60 * 1000);
+
 // Admin: List links
 app.get('/api/admin/links', auth, async (req, res) => {
   try {
@@ -426,6 +532,11 @@ app.get('/api/admin/links', auth, async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// Admin: Storage info
+app.get('/api/storage-info', auth, async (req, res) => {
+  res.json({ type: useSupabase ? 'supabase' : 'json' });
 });
 
 // Start server
