@@ -17,6 +17,7 @@
       position: relative;
       width: 100vw;
       height: 100vh;
+      background: #000;
     }
 
     #bookFrame {
@@ -24,6 +25,7 @@
       height: 100%;
       border: none;
       display: block;
+      background: #fff;
     }
 
     .overlay-buttons {
@@ -188,89 +190,98 @@
   </div>
 
   <script>
-    const BUTTON_APPEAR_DELAY = 15000; // 15 seconds
-    const AUTO_REDIRECT_DELAY = 10000; // 10 seconds after button appears
-    
-    const urlParams = new URLSearchParams(window.location.search);
-    const dataParam = urlParams.get('d');
-    
-    if (!dataParam) {
-      document.body.innerHTML = '<div class="no-book-container"><h1>Error</h1><p>Invalid link</p></div>';
-      throw new Error('No data parameter');
-    }
-
-    const { originalUrl, book } = JSON.parse(decodeURIComponent(dataParam));
-    
-    const bookFrame = document.getElementById('bookFrame');
-    const overlayButtons = document.getElementById('overlayButtons');
-    const continueBtn = document.getElementById('continueBtn');
-    const exploreBtn = document.getElementById('exploreBtn');
-    const timerSpan = document.getElementById('timer');
-    const noBookContainer = document.getElementById('noBookContainer');
-    const noBookCountdown = document.getElementById('noBookCountdown');
-
-    let autoRedirectTimeout;
-    let countdownInterval;
-    let userInteracted = false;
-
-    if (!book || !book.link) {
-      noBookContainer.style.display = 'flex';
-      let countdown = 3;
-      noBookCountdown.textContent = countdown;
+    (function() {
+      const BUTTON_APPEAR_DELAY = 15000;
+      const AUTO_REDIRECT_DELAY = 10000;
       
-      const countdownTimer = setInterval(() => {
-        countdown--;
-        if (countdown > 0) {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dataParam = urlParams.get('d');
+        
+        if (!dataParam) {
+          document.body.innerHTML = '<div class="no-book-container"><h1>Error</h1><p>Invalid link</p></div>';
+          return;
+        }
+
+        const data = JSON.parse(decodeURIComponent(dataParam));
+        const originalUrl = data.originalUrl;
+        const book = data.book;
+        
+        const bookFrame = document.getElementById('bookFrame');
+        const overlayButtons = document.getElementById('overlayButtons');
+        const continueBtn = document.getElementById('continueBtn');
+        const exploreBtn = document.getElementById('exploreBtn');
+        const timerSpan = document.getElementById('timer');
+        const noBookContainer = document.getElementById('noBookContainer');
+        const noBookCountdown = document.getElementById('noBookCountdown');
+
+        let autoRedirectTimeout;
+        let countdownInterval;
+        let userInteracted = false;
+
+        if (!book || !book.link) {
+          noBookContainer.style.display = 'flex';
+          let countdown = 3;
           noBookCountdown.textContent = countdown;
+          
+          const countdownTimer = setInterval(function() {
+            countdown--;
+            if (countdown > 0) {
+              noBookCountdown.textContent = countdown;
+            } else {
+              clearInterval(countdownTimer);
+              window.location.href = originalUrl;
+            }
+          }, 1000);
         } else {
-          clearInterval(countdownTimer);
-          window.location.href = originalUrl;
+          bookFrame.src = book.link;
+          bookFrame.style.display = 'block';
+          overlayButtons.style.display = 'flex';
+
+          setTimeout(function() {
+            continueBtn.classList.add('visible');
+            startCountdown();
+          }, BUTTON_APPEAR_DELAY);
+
+          continueBtn.addEventListener('click', function() {
+            userInteracted = true;
+            clearTimeout(autoRedirectTimeout);
+            clearInterval(countdownInterval);
+            window.location.href = originalUrl;
+          });
+
+          exploreBtn.addEventListener('click', function() {
+            userInteracted = true;
+            clearTimeout(autoRedirectTimeout);
+            clearInterval(countdownInterval);
+            window.location.href = book.link;
+          });
         }
-      }, 1000);
-    } else {
-      bookFrame.src = book.link;
-      bookFrame.style.display = 'block';
-      overlayButtons.style.display = 'flex';
 
-      setTimeout(() => {
-        continueBtn.classList.add('visible');
-        startCountdown();
-      }, BUTTON_APPEAR_DELAY);
+        function startCountdown() {
+          let secondsLeft = AUTO_REDIRECT_DELAY / 1000;
+          timerSpan.textContent = '(' + secondsLeft + 's)';
 
-      continueBtn.addEventListener('click', () => {
-        userInteracted = true;
-        clearTimeout(autoRedirectTimeout);
-        clearInterval(countdownInterval);
-        window.location.href = originalUrl;
-      });
+          countdownInterval = setInterval(function() {
+            secondsLeft--;
+            if (secondsLeft > 0) {
+              timerSpan.textContent = '(' + secondsLeft + 's)';
+            } else {
+              clearInterval(countdownInterval);
+            }
+          }, 1000);
 
-      exploreBtn.addEventListener('click', () => {
-        userInteracted = true;
-        clearTimeout(autoRedirectTimeout);
-        clearInterval(countdownInterval);
-        window.location.href = book.link;
-      });
-    }
-
-    function startCountdown() {
-      let secondsLeft = AUTO_REDIRECT_DELAY / 1000;
-      timerSpan.textContent = `(${secondsLeft}s)`;
-
-      countdownInterval = setInterval(() => {
-        secondsLeft--;
-        if (secondsLeft > 0) {
-          timerSpan.textContent = `(${secondsLeft}s)`;
-        } else {
-          clearInterval(countdownInterval);
+          autoRedirectTimeout = setTimeout(function() {
+            if (!userInteracted) {
+              window.location.href = originalUrl;
+            }
+          }, AUTO_REDIRECT_DELAY);
         }
-      }, 1000);
-
-      autoRedirectTimeout = setTimeout(() => {
-        if (!userInteracted) {
-          window.location.href = originalUrl;
-        }
-      }, AUTO_REDIRECT_DELAY);
-    }
+      } catch (error) {
+        document.body.innerHTML = '<div class="no-book-container"><h1>Error</h1><p>Failed to load page: ' + error.message + '</p></div>';
+        console.error('Redirect error:', error);
+      }
+    })();
   </script>
 </body>
-</html>
+        </html>
