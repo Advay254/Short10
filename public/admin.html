@@ -88,46 +88,74 @@
       resize: vertical;
     }
 
-    .book-list,
-    .link-list {
+    .book-list {
       display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 1rem;
       margin-top: 2rem;
     }
 
-    .book-item,
-    .link-item {
-      padding: 1.5rem;
+    .book-item {
+      padding: 1rem;
       background: white;
-      border-radius: 12px;
+      border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
-    .book-item h3,
-    .link-item h3 {
-      margin-bottom: 0.5rem;
+    .book-item:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transform: translateY(-2px);
+    }
+
+    .book-item h3 {
+      margin-bottom: 0.75rem;
       color: #333;
+      font-size: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .book-item p,
-    .link-item p {
+    .book-item .expand-icon {
+      font-size: 1.2rem;
+      color: #999;
+      transition: transform 0.2s;
+    }
+
+    .book-item.expanded .expand-icon {
+      transform: rotate(180deg);
+    }
+
+    .book-details {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+
+    .book-item.expanded .book-details {
+      max-height: 500px;
+    }
+
+    .book-item p {
       color: #666;
       margin-bottom: 0.5rem;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      line-height: 1.4;
     }
 
-    .book-item a,
-    .link-item a {
+    .book-item a {
       color: #667eea;
       text-decoration: none;
       word-break: break-all;
+      font-size: 0.85rem;
     }
 
-    .book-actions,
-    .link-actions {
+    .book-actions {
       margin-top: 1rem;
-      display: flex;
-      gap: 0.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e0e0e0;
     }
 
     .btn-delete {
@@ -195,7 +223,6 @@
 
     <div class="tabs">
       <button class="tab active" data-tab="books">Books</button>
-      <button class="tab" data-tab="links">Links</button>
       <button class="tab" data-tab="stats">Statistics</button>
     </div>
 
@@ -220,12 +247,6 @@
 
       <h2 style="margin-top: 3rem;">Your Books</h2>
       <div id="bookList" class="book-list"></div>
-    </div>
-
-    <!-- Links Tab -->
-    <div class="tab-content" id="linksTab">
-      <h2>All Short Links</h2>
-      <div id="linkList" class="link-list"></div>
     </div>
 
     <!-- Stats Tab -->
@@ -256,7 +277,6 @@
         document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
         
         if (tab.dataset.tab === 'books') loadBooks();
-        if (tab.dataset.tab === 'links') loadLinks();
         if (tab.dataset.tab === 'stats') loadStats();
       });
     });
@@ -380,18 +400,28 @@
         }
 
         bookList.innerHTML = books.map(book => `
-          <div class="book-item">
-            <h3>${escapeHtml(book.title)}</h3>
-            <p>${escapeHtml(book.description)}</p>
-            <a href="${escapeHtml(book.link)}" target="_blank">${escapeHtml(book.link)}</a>
-            <div class="book-actions">
-              <button class="btn-delete" onclick="deleteBook('${book.id}')">Delete</button>
+          <div class="book-item" onclick="toggleBook(this)">
+            <h3>
+              <span>${escapeHtml(book.title)}</span>
+              <span class="expand-icon">▼</span>
+            </h3>
+            <div class="book-details">
+              <p style="margin-top: 0.5rem;"><strong>Description:</strong><br>${escapeHtml(book.description || 'No description')}</p>
+              <p><strong>Link:</strong><br><a href="${escapeHtml(book.link)}" target="_blank">${escapeHtml(book.link)}</a></p>
+              <div class="book-actions">
+                <button class="btn-delete" onclick="event.stopPropagation(); deleteBook('${book.id}')">Delete</button>
+              </div>
             </div>
           </div>
         `).join('');
       } catch (err) {
         console.error('Load books error:', err);
       }
+    }
+
+    // Toggle book details
+    function toggleBook(element) {
+      element.classList.toggle('expanded');
     }
 
     // Delete Book
@@ -409,34 +439,6 @@
         }
       } catch (err) {
         alert('Failed to delete book');
-      }
-    }
-
-    // Load Links
-    async function loadLinks() {
-      try {
-        const response = await fetch('/api/admin/links', {
-          headers: { 'Authorization': authToken }
-        });
-        const links = await response.json();
-
-        const linkList = document.getElementById('linkList');
-        if (links.length === 0) {
-          linkList.innerHTML = '<p style="color: #666; text-align: center; padding: 2rem;">No links created yet.</p>';
-          return;
-        }
-
-        linkList.innerHTML = links.reverse().map(link => `
-          <div class="link-item">
-            <h3>/${link.code}</h3>
-            <p><strong>Original:</strong> <a href="${escapeHtml(link.url)}" target="_blank">${escapeHtml(link.url)}</a></p>
-            ${link.keywords ? `<p><strong>Keywords:</strong> ${escapeHtml(link.keywords)}</p>` : ''}
-            ${link.book ? `<p><strong>Matched Book:</strong> ${escapeHtml(link.book.title)}</p>` : '<p><strong>Book:</strong> Not matched yet</p>'}
-            <p><strong>Created:</strong> ${new Date(link.created).toLocaleString()}</p>
-          </div>
-        `).join('');
-      } catch (err) {
-        console.error('Load links error:', err);
       }
     }
 
@@ -495,8 +497,9 @@
       return div.innerHTML;
     }
 
-    // Expose deleteBook to global scope
+    // Expose functions to global scope
     window.deleteBook = deleteBook;
+    window.toggleBook = toggleBook;
   </script>
 </body>
-</html>
+  </html>
