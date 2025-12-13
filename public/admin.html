@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .login-box {
+      max-width: 400px;
+      margin: 100px auto;
+      padding: 2rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    }
+
+    .login-box h2 {
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .login-box input {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .tab {
+      padding: 0.75rem 1.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    .book-list,
+    .link-list {
+      display: grid;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .book-item,
+    .link-item {
+      padding: 1.5rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .book-item h3,
+    .link-item h3 {
+      margin-bottom: 0.5rem;
+      color: #333;
+    }
+
+    .book-item p,
+    .link-item p {
+      color: #666;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .book-item a,
+    .link-item a {
+      color: #667eea;
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .book-actions,
+    .link-actions {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .btn-delete {
+      background: #ff4757;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .btn-delete:hover {
+      background: #ee3142;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      padding: 1.5rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .stat-card .number {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card .label {
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Form -->
+  <div id="loginBox" class="login-box">
+    <h2>🔐 Admin Login</h2>
+    <input type="text" id="username" placeholder="Username" autocomplete="username">
+    <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn btn-primary" id="loginBtn">Login</button>
+    <div id="loginError" class="error hidden"></div>
+  </div>
+
+  <!-- Admin Panel -->
+  <div id="adminPanel" class="admin-container" style="display: none;">
+    <header style="margin-bottom: 2rem;">
+      <h1>Admin Panel</h1>
+      <div style="float: right; display: flex; gap: 1rem; align-items: center;">
+        <span id="storageIndicator" style="font-size: 0.9rem; color: #666;"></span>
+        <button class="btn" id="logoutBtn">Logout</button>
+      </div>
+      <div style="clear: both;"></div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="books">Books</button>
+      <button class="tab" data-tab="links">Links</button>
+      <button class="tab" data-tab="stats">Statistics</button>
+    </div>
+
+    <!-- Books Tab -->
+    <div class="tab-content active" id="booksTab">
+      <h2>Add New Book</h2>
+      <div class="form-group">
+        <label>Book Link (Affiliate/Purchase URL)</label>
+        <input type="url" id="bookLink" placeholder="https://payhip.com/b/xxxxx">
+      </div>
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="bookTitle" placeholder="Crypto Passive Income Guide">
+      </div>
+      <div class="form-group">
+        <label>Description (helps with keyword matching)</label>
+        <textarea id="bookDescription" placeholder="Learn cryptocurrency staking, yield farming, and passive income strategies..."></textarea>
+      </div>
+      <button class="btn btn-primary" id="addBookBtn">Add Book</button>
+      <div id="bookSuccess" class="success hidden"></div>
+      <div id="bookError" class="error hidden"></div>
+
+      <h2 style="margin-top: 3rem;">Your Books</h2>
+      <div id="bookList" class="book-list"></div>
+    </div>
+
+    <!-- Links Tab -->
+    <div class="tab-content" id="linksTab">
+      <h2>All Short Links</h2>
+      <div id="linkList" class="link-list"></div>
+    </div>
+
+    <!-- Stats Tab -->
+    <div class="tab-content" id="statsTab">
+      <h2>Statistics</h2>
+      <div class="stats" id="stats"></div>
+    </div>
+  </div>
+
+  <script>
+    let authToken = '';
+
+    // Elements
+    const loginBox = document.getElementById('loginBox');
+    const adminPanel = document.getElementById('adminPanel');
+    const username = document.getElementById('username');
+    const password = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
+        
+        if (tab.dataset.tab === 'books') loadBooks();
+        if (tab.dataset.tab === 'links') loadLinks();
+        if (tab.dataset.tab === 'stats') loadStats();
+      });
+    });
+
+    // Login
+    loginBtn.addEventListener('click', login);
+    password.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
+    });
+
+    async function login() {
+      const user = username.value.trim();
+      const pass = password.value.trim();
+
+      if (!user || !pass) {
+        showError(loginError, 'Please enter credentials');
+        return;
+      }
+
+      authToken = 'Basic ' + btoa(user + ':' + pass);
+
+      try {
+        const response = await fetch('/api/admin/books', {
+          headers: { 'Authorization': authToken }
+        });
+
+        if (response.ok) {
+          loginBox.style.display = 'none';
+          adminPanel.style.display = 'block';
+          checkStorageType();
+          loadBooks();
+        } else {
+          showError(loginError, 'Invalid credentials');
+          authToken = '';
+        }
+      } catch (err) {
+        showError(loginError, 'Connection error');
+      }
+    }
+
+    // Logout
+    logoutBtn.addEventListener('click', () => {
+      authToken = '';
+      loginBox.style.display = 'block';
+      adminPanel.style.display = 'none';
+      username.value = '';
+      password.value = '';
+    });
+
+    // Check storage type
+    async function checkStorageType() {
+      try {
+        const response = await fetch('/api/storage-info', {
+          headers: { 'Authorization': authToken }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const indicator = document.getElementById('storageIndicator');
+          if (data.type === 'supabase') {
+            indicator.innerHTML = '🟢 Supabase Storage';
+            indicator.style.color = '#10b981';
+          } else {
+            indicator.innerHTML = '🟡 JSON Storage';
+            indicator.style.color = '#f59e0b';
+          }
+        }
+      } catch (err) {
+        console.error('Storage check error:', err);
+      }
+    }
+
+    // Add Book
+    document.getElementById('addBookBtn').addEventListener('click', async () => {
+      const link = document.getElementById('bookLink').value.trim();
+      const title = document.getElementById('bookTitle').value.trim();
+      const description = document.getElementById('bookDescription').value.trim();
+      const successDiv = document.getElementById('bookSuccess');
+      const errorDiv = document.getElementById('bookError');
+
+      if (!link || !title) {
+        showError(errorDiv, 'Link and title are required');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin/books', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authToken
+          },
+          body: JSON.stringify({ link, title, description })
+        });
+
+        if (response.ok) {
+          document.getElementById('bookLink').value = '';
+          document.getElementById('bookTitle').value = '';
+          document.getElementById('bookDescription').value = '';
+          showSuccess(successDiv, 'Book added successfully!');
+          loadBooks();
+        } else {
+          showError(errorDiv, 'Failed to add book');
+        }
+      } catch (err) {
+        showError(errorDiv, 'Connection error');
+      }
+    });
+
+    // Load Books
+    async function loadBooks() {
+      try {
+        const response = await fetch('/api/admin/books', {
+          headers: { 'Authorization': authToken }
+        });
+        const books = await response.json();
+
+        const bookList = document.getElementById('bookList');
+        if (books.length === 0) {
+          bookList.innerHTML = '<p style="color: #666; text-align: center; padding: 2rem;">No books yet. Add your first book above!</p>';
+          return;
+        }
+
+        bookList.innerHTML = books.map(book => `
+          <div class="book-item">
+            <h3>${escapeHtml(book.title)}</h3>
+            <p>${escapeHtml(book.description)}</p>
+            <a href="${escapeHtml(book.link)}" target="_blank">${escapeHtml(book.link)}</a>
+            <div class="book-actions">
+              <button class="btn-delete" onclick="deleteBook('${book.id}')">Delete</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Load books error:', err);
+      }
+    }
+
+    // Delete Book
+    async function deleteBook(id) {
+      if (!confirm('Delete this book?')) return;
+
+      try {
+        const response = await fetch(`/api/admin/books/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': authToken }
+        });
+
+        if (response.ok) {
+          loadBooks();
+        }
+      } catch (err) {
+        alert('Failed to delete book');
+      }
+    }
+
+    // Load Links
+    async function loadLinks() {
+      try {
+        const response = await fetch('/api/admin/links', {
+          headers: { 'Authorization': authToken }
+        });
+        const links = await response.json();
+
+        const linkList = document.getElementById('linkList');
+        if (links.length === 0) {
+          linkList.innerHTML = '<p style="color: #666; text-align: center; padding: 2rem;">No links created yet.</p>';
+          return;
+        }
+
+        linkList.innerHTML = links.reverse().map(link => `
+          <div class="link-item">
+            <h3>/${link.code}</h3>
+            <p><strong>Original:</strong> <a href="${escapeHtml(link.url)}" target="_blank">${escapeHtml(link.url)}</a></p>
+            ${link.keywords ? `<p><strong>Keywords:</strong> ${escapeHtml(link.keywords)}</p>` : ''}
+            ${link.book ? `<p><strong>Matched Book:</strong> ${escapeHtml(link.book.title)}</p>` : '<p><strong>Book:</strong> Not matched yet</p>'}
+            <p><strong>Created:</strong> ${new Date(link.created).toLocaleString()}</p>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Load links error:', err);
+      }
+    }
+
+    // Load Stats
+    async function loadStats() {
+      try {
+        const [booksRes, linksRes] = await Promise.all([
+          fetch('/api/admin/books', { headers: { 'Authorization': authToken }}),
+          fetch('/api/admin/links', { headers: { 'Authorization': authToken }})
+        ]);
+
+        const books = await booksRes.json();
+        const links = await linksRes.json();
+
+        const matched = links.filter(l => l.book).length;
+        const unmatched = links.length - matched;
+
+        document.getElementById('stats').innerHTML = `
+          <div class="stat-card">
+            <div class="number">${books.length}</div>
+            <div class="label">Total Books</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${links.length}</div>
+            <div class="label">Total Links</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${matched}</div>
+            <div class="label">Matched Links</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">${unmatched}</div>
+            <div class="label">Unmatched Links</div>
+          </div>
+        `;
+      } catch (err) {
+        console.error('Load stats error:', err);
+      }
+    }
+
+    function showError(element, message) {
+      element.textContent = message;
+      element.classList.remove('hidden');
+      setTimeout(() => element.classList.add('hidden'), 5000);
+    }
+
+    function showSuccess(element, message) {
+      element.textContent = message;
+      element.classList.remove('hidden');
+      setTimeout(() => element.classList.add('hidden'), 5000);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Expose deleteBook to global scope
+    window.deleteBook = deleteBook;
+  </script>
+</body>
+</html>
