@@ -6,7 +6,9 @@ A free URL shortener that shows relevant affiliate products before redirecting t
 
 - 🔗 Instant short link generation
 - 📚 Smart AI book matching with fuzzy fallback
-- ⏱️ 25-second discovery window (15s + 10s auto-redirect)
+- ⏱️ 30-second discovery window (15s + 15s auto-redirect)
+- ⏰ **Link expiry options** (1 day, 3 days, 1 week, 1 month, never)
+- 🗑️ **Auto-cleanup** of expired links (hourly)
 - 📱 Fully responsive design
 - 🔐 Secure admin panel
 - 💾 **Supabase support with JSON fallback** (persistent storage)
@@ -49,6 +51,7 @@ CREATE TABLE links (
   url TEXT NOT NULL,
   keywords TEXT,
   book JSONB,
+  expires_at TIMESTAMP WITH TIME ZONE,
   created TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -60,6 +63,9 @@ CREATE TABLE books (
   description TEXT,
   created TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Create index for faster expiry checks
+CREATE INDEX idx_links_expires ON links(expires_at);
 
 -- Enable Row Level Security (RLS) - Optional but recommended
 ALTER TABLE links ENABLE ROW LEVEL SECURITY;
@@ -119,7 +125,7 @@ SUPABASE_KEY=your-anon-key-here
 1. Paste long URL → Get short link instantly
 2. Click short link → See relevant book/product
 3. "Explore" button (stay) or "Continue" button (go to original)
-4. Auto-redirects after 25 seconds if no action
+4. Auto-redirects after 30 seconds if no action
 
 ### For You
 1. Add books in admin panel (`/admin`)
@@ -152,7 +158,15 @@ Content-Type: application/json
 
 {
   "url": "https://example.com/long-url",
-  "keywords": "optional keywords"
+  "keywords": "optional keywords",  // optional
+  "expiry": "1week"  // optional: 1day, 3days, 1week, 1month, never (default: 1week)
+}
+
+Response:
+{
+  "shortUrl": "https://yoursite.com/abc123",
+  "shortCode": "abc123",
+  "expiresAt": "2025-12-21T12:00:00.000Z"  // or null if never expires
 }
 ```
 
@@ -171,7 +185,7 @@ GET    /api/admin/links      # List links
 Edit `public/redirect.html`:
 ```javascript
 const BUTTON_APPEAR_DELAY = 15000; // Button appears (milliseconds)
-const AUTO_REDIRECT_DELAY = 10000;  // Then auto-redirect
+const AUTO_REDIRECT_DELAY = 15000;  // Then auto-redirect
 ```
 
 ### Change Colors
