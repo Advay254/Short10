@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      overflow: hidden;
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #bookFrame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    .overlay-buttons {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 8px;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
+      z-index: 999999;
+      pointer-events: none;
+      height: 80px;
+    }
+
+    .overlay-buttons > * {
+      pointer-events: all;
+    }
+
+    .action-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 160px;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    }
+
+    .action-btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-explore {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-continue {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .btn-continue.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .timer {
+      font-size: 12px;
+      opacity: 0.95;
+      white-space: nowrap;
+    }
+
+    .no-book-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .no-book-container h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .no-book-container p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      opacity: 0.9;
+    }
+
+    .countdown-large {
+      font-size: 3rem;
+      font-weight: bold;
+      margin: 1rem 0;
+    }
+
+    @media (max-width: 768px) {
+      .action-btn {
+        padding: 8px 14px;
+        font-size: 12px;
+        max-width: 140px;
+      }
+
+      .timer {
+        font-size: 11px;
+      }
+
+      .overlay-buttons {
+        padding: 6px;
+        height: 70px;
+      }
+
+      .no-book-container h1 {
+        font-size: 1.8rem;
+      }
+
+      .no-book-container p {
+        font-size: 1rem;
+      }
+
+      .countdown-large {
+        font-size: 2.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .action-btn {
+        padding: 7px 12px;
+        font-size: 11px;
+        gap: 4px;
+      }
+
+      .timer {
+        font-size: 10px;
+      }
+
+      .overlay-buttons {
+        height: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <iframe id="bookFrame" style="display: none;"></iframe>
+  
+  <div id="noBookContainer" class="no-book-container" style="display: none;">
+    <h1>🔗 Redirecting...</h1>
+    <p>Taking you to your destination</p>
+    <div class="countdown-large" id="noBookCountdown">3</div>
+  </div>
+
+  <div class="overlay-buttons" id="overlayButtons" style="display: none;">
+    <button class="action-btn btn-explore" id="exploreBtn">
+      📚 <span>Explore</span>
+    </button>
+    <button class="action-btn btn-continue" id="continueBtn">
+      <span>Continue</span>
+      <span class="timer" id="timer"></span>
+    </button>
+  </div>
+
+  <script>
+    const BUTTON_APPEAR_DELAY = 15000; // 15 seconds
+    const AUTO_REDIRECT_DELAY = 10000; // 10 seconds after button appears
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const dataParam = urlParams.get('d');
+    
+    if (!dataParam) {
+      document.body.innerHTML = '<div class="no-book-container"><h1>Error</h1><p>Invalid link</p></div>';
+      throw new Error('No data parameter');
+    }
+
+    const { originalUrl, book } = JSON.parse(decodeURIComponent(dataParam));
+    
+    const bookFrame = document.getElementById('bookFrame');
+    const overlayButtons = document.getElementById('overlayButtons');
+    const continueBtn = document.getElementById('continueBtn');
+    const exploreBtn = document.getElementById('exploreBtn');
+    const timerSpan = document.getElementById('timer');
+    const noBookContainer = document.getElementById('noBookContainer');
+    const noBookCountdown = document.getElementById('noBookCountdown');
+
+    let autoRedirectTimeout;
+    let countdownInterval;
+    let userInteracted = false;
+
+    if (!book || !book.link) {
+      noBookContainer.style.display = 'flex';
+      let countdown = 3;
+      noBookCountdown.textContent = countdown;
+      
+      const countdownTimer = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+          noBookCountdown.textContent = countdown;
+        } else {
+          clearInterval(countdownTimer);
+          window.location.href = originalUrl;
+        }
+      }, 1000);
+    } else {
+      bookFrame.src = book.link;
+      bookFrame.style.display = 'block';
+      overlayButtons.style.display = 'flex';
+
+      setTimeout(() => {
+        continueBtn.classList.add('visible');
+        startCountdown();
+      }, BUTTON_APPEAR_DELAY);
+
+      continueBtn.addEventListener('click', () => {
+        userInteracted = true;
+        clearTimeout(autoRedirectTimeout);
+        clearInterval(countdownInterval);
+        window.location.href = originalUrl;
+      });
+
+      exploreBtn.addEventListener('click', () => {
+        userInteracted = true;
+        clearTimeout(autoRedirectTimeout);
+        clearInterval(countdownInterval);
+        window.location.href = book.link;
+      });
+    }
+
+    function startCountdown() {
+      let secondsLeft = AUTO_REDIRECT_DELAY / 1000;
+      timerSpan.textContent = `(${secondsLeft}s)`;
+
+      countdownInterval = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft > 0) {
+          timerSpan.textContent = `(${secondsLeft}s)`;
+        } else {
+          clearInterval(countdownInterval);
+        }
+      }, 1000);
+
+      autoRedirectTimeout = setTimeout(() => {
+        if (!userInteracted) {
+          window.location.href = originalUrl;
+        }
+      }, AUTO_REDIRECT_DELAY);
+    }
+  </script>
+</body>
+</html>
