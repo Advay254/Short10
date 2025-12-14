@@ -885,3 +885,4 @@ Open an issue on GitHub with:
 **Built with ❤️ FROM ADVAY254 for ethical affiliate marketing**
 
 Deploy it. Share links. Earn passively. 🚀
+[![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/advay254)
