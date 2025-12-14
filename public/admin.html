@@ -371,6 +371,8 @@
           body: JSON.stringify({ link, title, description })
         });
 
+        const data = await response.json();
+
         if (response.ok) {
           document.getElementById('bookLink').value = '';
           document.getElementById('bookTitle').value = '';
@@ -378,7 +380,8 @@
           showSuccess(successDiv, 'Book added successfully!');
           loadBooks();
         } else {
-          showError(errorDiv, 'Failed to add book');
+          // Show specific error message from server
+          showError(errorDiv, data.message || data.error || 'Failed to add book');
         }
       } catch (err) {
         showError(errorDiv, 'Connection error');
@@ -502,4 +505,4 @@
     window.toggleBook = toggleBook;
   </script>
 </body>
-  </html>
+</html>
