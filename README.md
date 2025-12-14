@@ -101,7 +101,7 @@ Built for scalability and reliability, Short10 supports both local JSON storage 
 ---
 
 ## Support
-If this project helps you, consider supporting it.
+If this project saved you time, helped you learn something new, or inspired you in any way, consider supporting me. Every contribution keeps me motivated, maintained, and improving since most of my projects are hobby based and I want to share my 💡 with you guys. Even a small coffee goes a long way. Thank you for being here.
 
 [![Buy Me A Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://www.buymeacoffee.com/advay254)
 
