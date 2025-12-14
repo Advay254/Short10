@@ -33,17 +33,34 @@ cp .env.example .env
 Leave Supabase variables empty in `.env` - works immediately!
 
 #### Option B: Use Supabase (Recommended for Production)
-1. Go to [supabase.com](https://supabase.com) and create account
-2. Create new project (takes 2 minutes)
-3. Go to Project Settings → API
-4. Copy your project URL and anon/public key
-5. Add to `.env`:
-```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-anon-key-here
-```
+# Supabase Setup Guide (5 Minutes)
 
-6. Create tables in Supabase SQL Editor:
+## Step 1: Create Supabase Account
+1. Go to [supabase.com](https://supabase.com)
+2. Click "Start your project"
+3. Sign up with GitHub (easiest) or email
+
+## Step 2: Create New Project
+1. Click "New Project"
+2. Fill in:
+   - **Name**: `url-shortener` (or anything you want)
+   - **Database Password**: Save this! (you won't need it often)
+   - **Region**: Choose closest to you
+3. Click "Create new project"
+4. Wait 2 minutes for setup
+
+## Step 3: Get Your Credentials
+1. In your project, go to **Settings** (gear icon) → **API**
+2. You'll see:
+   - **Project URL**: `https://xxxxx.supabase.co`
+   - **anon/public key**: Long string starting with `eyJ...`
+3. Copy both - you'll add them to `.env` file
+
+## Step 4: Create Database Tables
+1. Go to **SQL Editor** (left sidebar)
+2. Click **New query**
+3. Copy and paste this SQL:
+
 ```sql
 -- Links table
 CREATE TABLE links (
@@ -51,7 +68,6 @@ CREATE TABLE links (
   url TEXT NOT NULL,
   keywords TEXT,
   book JSONB,
-  expires_at TIMESTAMP WITH TIME ZONE,
   created TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -64,32 +80,93 @@ CREATE TABLE books (
   created TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create index for faster expiry checks
-CREATE INDEX idx_links_expires ON links(expires_at);
-
--- Enable Row Level Security (RLS) - Optional but recommended
+-- Enable Row Level Security
 ALTER TABLE links ENABLE ROW LEVEL SECURITY;
 ALTER TABLE books ENABLE ROW LEVEL SECURITY;
 
--- Allow public read access (since this is a URL shortener)
-CREATE POLICY "Allow public read on links" ON links FOR SELECT USING (true);
-CREATE POLICY "Allow public read on books" ON books FOR SELECT USING (true);
-
--- Allow public insert (for creating short links)
-CREATE POLICY "Allow public insert on links" ON links FOR INSERT WITH CHECK (true);
-
--- You can manage books only through admin panel via API
+-- Allow public access (URL shortener needs this)
+CREATE POLICY "Allow all on links" ON links FOR ALL USING (true);
+CREATE POLICY "Allow all on books" ON books FOR ALL USING (true);
 ```
 
-### 4. Start Server
+4. Click **Run** (or press Ctrl+Enter)
+5. You should see "Success. No rows returned"
+
+## Step 5: Add to Your .env File
+Open your `.env` file and add:
+
+```env
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+Replace with your actual values from Step 3.
+
+## Step 6: Test It
 ```bash
 npm start
-# Visit http://localhost:3000
 ```
+
+You should see:
+```
+✅ Using Supabase for storage
+✅ Server running on port 3000
+```
+
+If you see "Using JSON file storage" instead, check your credentials.
+
+## Step 7: Verify Data
+1. Create a short link on your homepage
+2. Go to Supabase → **Table Editor**
+3. Click **links** table
+4. You should see your link there!
+
+---
+
+## ✅ You're Done!
+
+Your URL shortener now uses Supabase:
+- ✅ Data persists forever (never lost on restart)
+- ✅ Can handle 500,000+ links
+- ✅ Free tier never expires
+- ✅ Automatic backups
+
+## 🔄 Switching Between JSON and Supabase
+
+**To use JSON storage**: Leave `SUPABASE_URL` and `SUPABASE_KEY` empty in `.env`
+
+**To use Supabase**: Fill in both values in `.env`
+
+The system automatically detects which to use!
+
+---
+
+## Common Issues
+
+### "Invalid API key"
+- Copy the **anon/public** key, not the service_role key
+- Make sure no extra spaces in `.env` file
+
+### "relation does not exist"
+- You forgot to run the SQL from Step 4
+- Go back and create the tables
+
+### Can't see data in Supabase
+- Check Table Editor → links/books tables
+- Make sure RLS policies are created (Step 4)
+
+### Falls back to JSON storage
+- Check `.env` variables are correct
+- Restart server after changing `.env`
+- Check Supabase project is not paused (free tier doesn't pause)
+
+---
+
+Need help? Check your server logs - they show exactly what's happening!
 
 ## 📦 Deployment
 
-### Deploy to Render
+### Deploy to Render(Highly Recommended)
 1. Push code to GitHub
 2. Create new Web Service on Render
 3. Connect GitHub repo
