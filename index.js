@@ -449,6 +449,33 @@ app.post('/api/admin/books', auth, async (req, res) => {
     if (!link || !title) {
       return res.status(400).json({ error: 'Link and title required' });
     }
+
+    // Check for duplicates
+    const existingBooks = await storage.getBooks();
+    
+    // Check if link already exists
+    const duplicateLink = existingBooks.find(book => 
+      book.link.toLowerCase().trim() === link.toLowerCase().trim()
+    );
+    
+    if (duplicateLink) {
+      return res.status(400).json({ 
+        error: 'Duplicate book link',
+        message: `This link already exists: "${duplicateLink.title}"`
+      });
+    }
+
+    // Check if title already exists
+    const duplicateTitle = existingBooks.find(book => 
+      book.title.toLowerCase().trim() === title.toLowerCase().trim()
+    );
+    
+    if (duplicateTitle) {
+      return res.status(400).json({ 
+        error: 'Duplicate book title',
+        message: `A book with this title already exists`
+      });
+    }
     
     const newBook = {
       id: nanoid(10),
@@ -554,4 +581,4 @@ if (!useSupabase) {
     console.log(`🏠 Homepage: http://localhost:${PORT}`);
     console.log(`🔐 Admin: http://localhost:${PORT}/admin`);
   });
-}
+  }
