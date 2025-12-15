@@ -294,8 +294,9 @@ async function matchBook(url, keywords = '') {
   }
   
   if (!matched) {
-    matched = books[books.length - 1];
-    console.log(`No match found, using newest: ${matched.title}`);
+    // Show random book instead of newest (fair to all books)
+    matched = books[Math.floor(Math.random() * books.length)];
+    console.log(`No match found, using random: ${matched.title}`);
   }
   
   return matched;
@@ -581,4 +582,4 @@ if (!useSupabase) {
     console.log(`🏠 Homepage: http://localhost:${PORT}`);
     console.log(`🔐 Admin: http://localhost:${PORT}/admin`);
   });
-  }
+    }
